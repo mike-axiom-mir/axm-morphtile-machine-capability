@@ -19,7 +19,7 @@ function run(request) {
     candidate: sleeping
       ? { schema: "morphtile.capability-candidate/v0.4", capabilities: [{ id: "counter", wake: intent.wake || { on: "signal", name: "increment" }, grants: { facets: { logic }, sockets: [socket] } }] }
       : { schema: "morphtile.capability-candidate/v0.4", facets: { logic, connect: { sockets: [socket], bridges: [] } } },
-    evidence: [{ kind: "REPLAY", status: "PASS", check: "output is a pure deterministic mapping of the request" }]
+    evidence: [{ kind: "DETERMINISTIC_OUTPUT", status: "PASS", check: "same validated request maps to the same candidate bytes" }]
   });
 }
 
