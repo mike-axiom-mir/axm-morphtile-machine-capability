@@ -27,4 +27,3 @@ Node 18 or later; zero runtime dependencies; no secrets or network required.
 - HELD: The counter has not yet been executed by MorphTile; the sleeping shape remains a candidate.
 
 This is a foundation, not evidence that MorphTile can autonomously manufacture MorphTile.
-
