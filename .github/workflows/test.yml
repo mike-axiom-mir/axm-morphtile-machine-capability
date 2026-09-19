@@ -11,8 +11,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout capability machine
+        uses: actions/checkout@v4
+        with:
+          path: capability-machine
+      - name: Checkout pinned MorphTile runtime
+        uses: actions/checkout@v4
+        with:
+          repository: mike-axiom-mir/axm-morphtile
+          ref: 4346df01ed18cd1336064f9323d7766ff4f6338a
+          path: morphtile
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm test
+      - name: Run unit and cross-repo runtime tests
+        working-directory: capability-machine
+        env:
+          MORPHTILE_CORE: ${{ github.workspace }}/morphtile/core/morphtile.js
+        run: npm test
