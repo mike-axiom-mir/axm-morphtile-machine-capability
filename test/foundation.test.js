@@ -9,6 +9,11 @@ test("returns the same stateful sleeping capability for the same request", () =>
   assert.equal(first.status, "CANDIDATE");
   assert.deepEqual(first.candidate.capabilities[0].wake, { on: "signal", name: "increment" });
   assert.equal(first.candidate.capabilities[0].grants.facets.logic.data.vars.count, 0);
+  assert.deepEqual(first.evidence, [{
+    kind: "DETERMINISTIC_OUTPUT",
+    status: "PASS",
+    check: "same validated request maps to the same candidate bytes"
+  }]);
 });
 
 test("holds a capability outside the proven vocabulary", () => {
