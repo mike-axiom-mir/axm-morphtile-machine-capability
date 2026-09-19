@@ -1,0 +1,1 @@
+{"envelope_version":"0.1","request_id":"cap-counter-1","goal":"Create a counter that sleeps until signalled","intent":{"kind":"sleeping-counter","wake":{"on":"signal","name":"increment"}},"provenance":{"caller":"fixture"}}
