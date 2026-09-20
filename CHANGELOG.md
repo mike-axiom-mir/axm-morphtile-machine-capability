@@ -8,6 +8,9 @@
 - Added deterministic compilation for MorphTile v0.4 `near`, `value`, and `time` wake rules alongside the already-proven `manual` and `signal` modes.
 - Added fail-closed type/range/field validation for proximity radius/hysteresis, descendant-relative value references and thresholds, and time thresholds.
 - Added pinned MorphTile runtime proof for near wake + hysteresis + automatic sleep, value threshold wake through the normal settle door, time threshold wake, unchanged canonical matter, preserved sparse state, and exact replay.
+- Completed the documented wake descriptor contract by compiling boolean `sleeps` for near/value/time and accepting the explicit empty value-wake tile reference for the capability carrier itself.
+- Non-boolean retention values fail closed; `sleeps` remains rejected on manual/signal where MorphTile does not define it.
+- Added current-pin runtime proof that `sleeps:false` retains activation beyond the near hysteresis band and that `tile:""` observes the carrier's own state without rewriting canonical matter.
 
 ## 0.1.0 — 2026-09-19
 
