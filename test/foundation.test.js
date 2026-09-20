@@ -16,6 +16,17 @@ test("returns the same stateful sleeping capability for the same request", () =>
   }]);
 });
 
+test("preserves the historical eager counter default only when kind is actually omitted", () => {
+  const built = run({
+    ...request,
+    request_id: "cap-kind-omitted-default",
+    intent: { initial: 4 }
+  });
+  assert.equal(built.status, "CANDIDATE");
+  assert.equal(built.candidate.capabilities, undefined);
+  assert.equal(built.candidate.facets.logic.data.vars.count, 4);
+});
+
 test("holds a capability outside the proven vocabulary", () => {
   const held = run({ ...request, request_id: "cap-held", intent: { kind: "telepathy" } });
   assert.equal(held.status, "HOLD");
