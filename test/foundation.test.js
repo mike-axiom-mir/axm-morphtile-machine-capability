@@ -17,7 +17,11 @@ test("returns the same stateful sleeping capability for the same request", () =>
 });
 
 test("holds a capability outside the proven vocabulary", () => {
-  assert.equal(run({ ...request, request_id: "cap-held", intent: { kind: "telepathy" } }).status, "HOLD");
+  const held = run({ ...request, request_id: "cap-held", intent: { kind: "telepathy" } });
+  assert.equal(held.status, "HOLD");
+  assert.equal(held.candidate, null);
+  assert.deepEqual(held.holds, [{ code: "HOLD_CAPABILITY_NOT_EXPRESSIBLE", kind: "telepathy" }]);
+  assert.equal(held.suggested_missing_capability, "capability:telepathy");
 });
 
 test("holds malformed intent instead of silently compiling the default counter", () => {
@@ -30,6 +34,24 @@ test("holds malformed intent instead of silently compiling the default counter",
       code: "HOLD_CAPABILITY_INTENT_INVALID",
       reason: "intent must be an object"
     }]);
+  }
+});
+
+test("holds malformed capability kind instead of treating falsey authored values as default counter", () => {
+  const values = ["", "   ", 0, false, null, [], {}];
+  for (const [index, kind] of values.entries()) {
+    const held = run({
+      ...request,
+      request_id: `cap-malformed-kind-${index}`,
+      intent: { kind }
+    });
+    assert.equal(held.status, "HOLD");
+    assert.equal(held.candidate, null);
+    assert.deepEqual(held.holds, [{
+      code: "HOLD_CAPABILITY_KIND_INVALID",
+      reason: "kind must be a non-empty, non-whitespace string when supplied"
+    }]);
+    assert.equal(held.suggested_missing_capability, null);
   }
 });
 
