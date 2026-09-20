@@ -37,14 +37,49 @@ test("holds unknown capability intent fields instead of dropping authored meanin
   const held = run({
     ...request,
     request_id: "cap-intent-fields-held",
-    intent: { kind: "sleeping-counter", wake: { on: "manual" }, zeta: true, initial: 5 }
+    intent: { kind: "sleeping-counter", wake: { on: "manual" }, zeta: true, typo: 1 }
   });
   assert.equal(held.status, "HOLD");
   assert.equal(held.candidate, null);
   assert.deepEqual(held.holds, [{
     code: "HOLD_CAPABILITY_INTENT_FIELD_UNKNOWN",
-    fields: ["initial", "zeta"]
+    fields: ["typo", "zeta"]
   }]);
+});
+
+test("compiles explicit safe-integer initial state into both counter shapes", () => {
+  const sleeping = run({
+    ...request,
+    request_id: "cap-initial-sleeping",
+    intent: { kind: "sleeping-counter", wake: { on: "manual" }, initial: 7 }
+  });
+  assert.equal(sleeping.status, "CANDIDATE");
+  assert.equal(sleeping.candidate.capabilities[0].grants.facets.logic.data.vars.count, 7);
+
+  const eager = run({
+    ...request,
+    request_id: "cap-initial-eager",
+    intent: { kind: "counter", initial: -3 }
+  });
+  assert.equal(eager.status, "CANDIDATE");
+  assert.equal(eager.candidate.facets.logic.data.vars.count, -3);
+});
+
+test("holds invalid initial state rather than coercing authored values", () => {
+  const values = [1.5, "5", null, Number.MAX_SAFE_INTEGER + 1, Infinity, NaN];
+  for (const [index, initial] of values.entries()) {
+    const held = run({
+      ...request,
+      request_id: `cap-invalid-initial-${index}`,
+      intent: { kind: "counter", initial }
+    });
+    assert.equal(held.status, "HOLD");
+    assert.equal(held.candidate, null);
+    assert.deepEqual(held.holds, [{
+      code: "HOLD_COUNTER_INITIAL_INVALID",
+      reason: "initial must be a safe integer"
+    }]);
+  }
 });
 
 test("holds wake modes that are representable by MorphTile but not yet proven by this machine", () => {
