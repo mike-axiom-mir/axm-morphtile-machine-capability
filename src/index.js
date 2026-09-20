@@ -4,6 +4,7 @@ const { assertRequest, result } = require("./envelope");
 const MACHINE = { id: "axm.morphtile.machine.capability", version: "0.1.0" };
 const PROVEN_WAKE_MODES = ["manual", "signal"];
 const INTENT_FIELDS = new Set(["kind", "wake", "initial"]);
+const PROVEN_KINDS = ["counter", "sleeping-counter"];
 
 function compileWake(wake) {
   const value = wake === undefined ? { on: "signal", name: "increment" } : wake;
@@ -47,6 +48,27 @@ function compileIntent(rawIntent) {
   return { ok: true, intent: rawIntent };
 }
 
+function compileKind(rawKind) {
+  if (rawKind === undefined) return { ok: true, kind: "counter" };
+  if (typeof rawKind !== "string" || rawKind.trim().length === 0) {
+    return {
+      ok: false,
+      hold: {
+        code: "HOLD_CAPABILITY_KIND_INVALID",
+        reason: "kind must be a non-empty, non-whitespace string when supplied"
+      }
+    };
+  }
+  if (!PROVEN_KINDS.includes(rawKind)) {
+    return {
+      ok: false,
+      hold: { code: "HOLD_CAPABILITY_NOT_EXPRESSIBLE", kind: rawKind },
+      suggested_missing_capability: "capability:" + rawKind
+    };
+  }
+  return { ok: true, kind: rawKind };
+}
+
 function compileInitial(rawInitial) {
   if (rawInitial === undefined) return { ok: true, initial: 0 };
   if (!Number.isSafeInteger(rawInitial)) {
@@ -69,16 +91,18 @@ function run(request) {
   }
 
   const intent = compiledIntent.intent;
-  if (intent.kind && intent.kind !== "counter" && intent.kind !== "sleeping-counter") {
+  const kind = compileKind(intent.kind);
+  if (!kind.ok) {
     return result(request, MACHINE, "HOLD", {
-      holds: [{ code: "HOLD_CAPABILITY_NOT_EXPRESSIBLE", kind: intent.kind }],
-      suggested_missing_capability: "capability:" + intent.kind
+      holds: [kind.hold],
+      suggested_missing_capability: kind.suggested_missing_capability || null
     });
   }
-  const sleeping = intent.kind === "sleeping-counter";
+
+  const sleeping = kind.kind === "sleeping-counter";
   if (!sleeping && intent.wake !== undefined) {
     return result(request, MACHINE, "HOLD", {
-      holds: [{ code: "HOLD_WAKE_RULE_NOT_APPLICABLE", kind: intent.kind || "counter" }]
+      holds: [{ code: "HOLD_WAKE_RULE_NOT_APPLICABLE", kind: kind.kind }]
     });
   }
 
@@ -105,4 +129,4 @@ function run(request) {
   });
 }
 
-module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, compileWake, compileIntent, compileInitial, run };
+module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, PROVEN_KINDS, compileWake, compileIntent, compileKind, compileInitial, run };
