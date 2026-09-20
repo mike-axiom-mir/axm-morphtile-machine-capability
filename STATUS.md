@@ -3,7 +3,7 @@
 - Foundation version: 0.1.0
 - State: TESTED INTEGRATION FOUNDATION
 - Local tests: `npm test`
-- MorphTile integration target: v0.4 at `a579182ae585e5722ac87dd0cc8209963b18d000`
+- MorphTile integration target: v0.4 at `b6b086edb70fd4657495fcf01cb9fcdedceafdaf`
 - Envelope: provisional v0.1
 - Visual proof: none
 
