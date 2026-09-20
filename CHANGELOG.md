@@ -11,6 +11,8 @@
 - Completed the documented wake descriptor contract by compiling boolean `sleeps` for near/value/time and accepting the explicit empty value-wake tile reference for the capability carrier itself.
 - Non-boolean retention values fail closed; `sleeps` remains rejected on manual/signal where MorphTile does not define it.
 - Added current-pin runtime proof that `sleeps:false` retains activation beyond the near hysteresis band and that `tile:""` observes the carrier's own state without rewriting canonical matter.
+- Made the machine's historical omitted sleeping-counter wake normalization visible with `WAKE_DEFAULT_COMPATIBILITY` instead of silently differing from raw MorphTile's manual omission default.
+- Added pinned runtime proof that omitted machine wake compiles to explicit signal/increment while raw MorphTile wake omission remains manual, with unchanged canonical matter and exact replay in both cases.
 
 ## 0.1.0 — 2026-09-19
 
