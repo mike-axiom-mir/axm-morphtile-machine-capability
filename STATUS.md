@@ -3,7 +3,7 @@
 - Foundation version: 0.1.0
 - State: TESTED INTEGRATION FOUNDATION
 - Local tests: `npm test`
-- MorphTile integration target: v0.4 at `b6b086edb70fd4657495fcf01cb9fcdedceafdaf`
+- MorphTile integration target: v0.4 at `ef2b3c6986aa1a333247feffc43a8443f17239d0`
 - Envelope: provisional v0.1
 - Visual proof: none
 
@@ -14,8 +14,8 @@
 - Fail-closed authored intent, capability-kind and wake-rule validation.
 - Optional safe-integer `initial` count compiled as authored logic state rather than runtime mutation state.
 - Sleeping-counter compilation for the complete currently documented MorphTile v0.4 wake vocabulary: `manual`, `signal`, `near`, `value`, and `time`.
-- Fail-closed validation for near radius/hysteresis, descendant-relative value references and exactly one finite threshold, and non-negative finite time thresholds.
-- Pinned cross-repository MorphTile integration covering sleep, all five wake modes, authored initial state, granted logic/socket activation, sparse state mutation only after divergence, near automatic sleep/state preservation, unchanged canonical tile matter, and exact ledger reconstruction.
+- Fail-closed validation for near radius/hysteresis, descendant-relative or explicit-empty self value references, exactly one finite value threshold, non-negative finite time thresholds, and boolean `sleeps` retention control where the MorphTile contract allows it.
+- Pinned cross-repository MorphTile integration covering sleep, all five wake modes, authored initial state, granted logic/socket activation, sparse state mutation only after divergence, near automatic sleep/state preservation, `sleeps:false` retained activation, empty self-relative value wake, unchanged canonical tile matter, and exact ledger reconstruction.
 
 ## HELD / open
 
