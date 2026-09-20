@@ -10,6 +10,20 @@ function finiteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function compileSleeps(rawSleeps, mode) {
+  if (rawSleeps === undefined) return { ok: true, present: false };
+  if (typeof rawSleeps !== "boolean") {
+    return {
+      ok: false,
+      hold: {
+        code: "HOLD_WAKE_RULE_INVALID",
+        reason: `${mode} wake sleeps must be boolean when supplied`
+      }
+    };
+  }
+  return { ok: true, present: true, sleeps: rawSleeps };
+}
+
 function compileWake(wake) {
   const value = wake === undefined ? { on: "signal", name: "increment" } : wake;
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -25,9 +39,9 @@ function compileWake(wake) {
   const allowedByMode = {
     manual: new Set(["on"]),
     signal: new Set(["on", "name"]),
-    near: new Set(["on", "within", "hysteresis"]),
-    value: new Set(["on", "tile", "var", "over", "under"]),
-    time: new Set(["on", "after"])
+    near: new Set(["on", "within", "hysteresis", "sleeps"]),
+    value: new Set(["on", "tile", "var", "over", "under", "sleeps"]),
+    time: new Set(["on", "after", "sleeps"])
   };
   const unknown = Object.keys(value).filter((key) => !allowedByMode[value.on].has(key)).sort();
   if (unknown.length) {
@@ -50,12 +64,16 @@ function compileWake(wake) {
     if (!finiteNumber(hysteresis) || hysteresis < 1) {
       return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "near wake hysteresis must be a finite number >= 1" } };
     }
-    return { ok: true, wake: { on: "near", within, hysteresis } };
+    const sleeps = compileSleeps(value.sleeps, "near");
+    if (!sleeps.ok) return sleeps;
+    const out = { on: "near", within, hysteresis };
+    if (sleeps.present) out.sleeps = sleeps.sleeps;
+    return { ok: true, wake: out };
   }
 
   if (value.on === "value") {
-    if (value.tile !== undefined && (typeof value.tile !== "string" || !/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(value.tile))) {
-      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake tile must be a descendant tile path when supplied" } };
+    if (value.tile !== undefined && (typeof value.tile !== "string" || (value.tile !== "" && !/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(value.tile)))) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake tile must be a descendant tile path or empty for this tile" } };
     }
     if (typeof value.var !== "string" || !value.var) {
       return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake requires a non-empty var name" } };
@@ -69,11 +87,14 @@ function compileWake(wake) {
     if (!finiteNumber(threshold)) {
       return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake threshold must be a finite number" } };
     }
+    const sleeps = compileSleeps(value.sleeps, "value");
+    if (!sleeps.ok) return sleeps;
     const out = { on: "value" };
     if (value.tile !== undefined) out.tile = value.tile;
     out.var = value.var;
     if (hasOver) out.over = value.over;
     else out.under = value.under;
+    if (sleeps.present) out.sleeps = sleeps.sleeps;
     return { ok: true, wake: out };
   }
 
@@ -81,7 +102,11 @@ function compileWake(wake) {
     if (!finiteNumber(value.after) || value.after < 0) {
       return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "time wake after must be a non-negative finite number" } };
     }
-    return { ok: true, wake: { on: "time", after: value.after } };
+    const sleeps = compileSleeps(value.sleeps, "time");
+    if (!sleeps.ok) return sleeps;
+    const out = { on: "time", after: value.after };
+    if (sleeps.present) out.sleeps = sleeps.sleeps;
+    return { ok: true, wake: out };
   }
 
   return { ok: true, wake: { on: "manual" } };
@@ -182,4 +207,4 @@ function run(request) {
   });
 }
 
-module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, PROVEN_KINDS, compileWake, compileIntent, compileKind, compileInitial, run };
+module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, PROVEN_KINDS, compileWake, compileSleeps, compileIntent, compileKind, compileInitial, run };
