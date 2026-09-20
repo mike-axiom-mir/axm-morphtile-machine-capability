@@ -2,9 +2,13 @@
 
 const { assertRequest, result } = require("./envelope");
 const MACHINE = { id: "axm.morphtile.machine.capability", version: "0.1.0" };
-const PROVEN_WAKE_MODES = ["manual", "signal"];
+const PROVEN_WAKE_MODES = ["manual", "signal", "near", "value", "time"];
 const INTENT_FIELDS = new Set(["kind", "wake", "initial"]);
 const PROVEN_KINDS = ["counter", "sleeping-counter"];
+
+function finiteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
 
 function compileWake(wake) {
   const value = wake === undefined ? { on: "signal", name: "increment" } : wake;
@@ -18,8 +22,14 @@ function compileWake(wake) {
     return { ok: false, hold: { code: "HOLD_WAKE_RULE_NOT_PROVEN", on: value.on, supported: PROVEN_WAKE_MODES.slice() } };
   }
 
-  const allowed = value.on === "signal" ? new Set(["on", "name"]) : new Set(["on"]);
-  const unknown = Object.keys(value).filter((key) => !allowed.has(key)).sort();
+  const allowedByMode = {
+    manual: new Set(["on"]),
+    signal: new Set(["on", "name"]),
+    near: new Set(["on", "within", "hysteresis"]),
+    value: new Set(["on", "tile", "var", "over", "under"]),
+    time: new Set(["on", "after"])
+  };
+  const unknown = Object.keys(value).filter((key) => !allowedByMode[value.on].has(key)).sort();
   if (unknown.length) {
     return { ok: false, hold: { code: "HOLD_WAKE_RULE_FIELD_UNKNOWN", on: value.on, fields: unknown } };
   }
@@ -29,6 +39,49 @@ function compileWake(wake) {
       return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "signal wake requires a non-empty name" } };
     }
     return { ok: true, wake: { on: "signal", name: value.name } };
+  }
+
+  if (value.on === "near") {
+    const within = value.within === undefined ? 8 : value.within;
+    const hysteresis = value.hysteresis === undefined ? 1.25 : value.hysteresis;
+    if (!finiteNumber(within) || within <= 0) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "near wake within must be a positive finite number" } };
+    }
+    if (!finiteNumber(hysteresis) || hysteresis < 1) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "near wake hysteresis must be a finite number >= 1" } };
+    }
+    return { ok: true, wake: { on: "near", within, hysteresis } };
+  }
+
+  if (value.on === "value") {
+    if (value.tile !== undefined && (typeof value.tile !== "string" || !/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/.test(value.tile))) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake tile must be a descendant tile path when supplied" } };
+    }
+    if (typeof value.var !== "string" || !value.var) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake requires a non-empty var name" } };
+    }
+    const hasOver = value.over !== undefined;
+    const hasUnder = value.under !== undefined;
+    if (hasOver === hasUnder) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake requires exactly one of over or under" } };
+    }
+    const threshold = hasOver ? value.over : value.under;
+    if (!finiteNumber(threshold)) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "value wake threshold must be a finite number" } };
+    }
+    const out = { on: "value" };
+    if (value.tile !== undefined) out.tile = value.tile;
+    out.var = value.var;
+    if (hasOver) out.over = value.over;
+    else out.under = value.under;
+    return { ok: true, wake: out };
+  }
+
+  if (value.on === "time") {
+    if (!finiteNumber(value.after) || value.after < 0) {
+      return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "time wake after must be a non-negative finite number" } };
+    }
+    return { ok: true, wake: { on: "time", after: value.after } };
   }
 
   return { ok: true, wake: { on: "manual" } };
