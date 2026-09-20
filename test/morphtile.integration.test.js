@@ -103,3 +103,53 @@ test("manual wake stays inert until explicit wake and still replays in pinned Mo
   assert.equal(replay.hash, MorphTile.hashOf(ws.live));
   assert.deepEqual(replay.world, ws.live);
 });
+
+test("authored initial state is an active default before the first sparse mutation and still replays", { skip: corePath ? false : "set MORPHTILE_CORE to run cross-repo integration" }, () => {
+  const MorphTile = require(path.resolve(corePath));
+  const built = run({
+    ...request,
+    request_id: "cap-initial-runtime",
+    intent: { kind: "sleeping-counter", wake: { on: "manual" }, initial: 7 }
+  });
+
+  assert.equal(built.status, "CANDIDATE");
+  assert.equal(built.candidate.capabilities[0].grants.facets.logic.data.vars.count, 7);
+
+  const tile = MorphTile.createTile({
+    id: "counter",
+    name: "Initial-state sleeping counter integration fixture",
+    capabilities: built.candidate.capabilities
+  });
+  const originalMatter = MorphTile.clone(tile);
+  const world = MorphTile.createWorld("Capability machine initial-state integration");
+  world.tiles.counter = tile;
+  assert.deepEqual(MorphTile.validateWorld(world), { ok: true, errors: [] });
+
+  const ws = MorphTile.createWorkspace(world);
+  assert.equal(MorphTile.getVar(ws.live, "counter", "count", ws.live.time), undefined, "sleeping capability stays inert before wake");
+  assert.deepEqual(ws.live.vars, {}, "authored defaults do not create runtime mutations while asleep");
+
+  const woke = MorphTile.act(ws, { do: "wake", tile: "counter", capability: "counter" }, "capability-machine-integration");
+  assert.equal(woke.ok, true);
+  assert.equal(MorphTile.getVar(ws.live, "counter", "count", ws.live.time), 7);
+  assert.deepEqual(ws.live.vars, {}, "reading the authored initial value must not create sparse state");
+  assert.deepEqual(ws.live.tiles.counter, originalMatter, "wake must not rewrite canonical tile matter");
+
+  const incremented = MorphTile.act(ws, { do: "signal", tile: "counter", name: "increment" }, "capability-machine-integration");
+  assert.equal(incremented.ok, true);
+  assert.equal(MorphTile.getVar(ws.live, "counter", "count", ws.live.time), 8);
+  assert.equal(ws.live.vars.counter.count, 8, "only divergence from the authored default becomes sparse runtime state");
+
+  const slept = MorphTile.act(ws, { do: "sleep", tile: "counter", capability: "counter" }, "capability-machine-integration");
+  assert.equal(slept.ok, true);
+  assert.equal(MorphTile.getVar(ws.live, "counter", "count", ws.live.time), 8);
+
+  const wokeAgain = MorphTile.act(ws, { do: "wake", tile: "counter", capability: "counter" }, "capability-machine-integration");
+  assert.equal(wokeAgain.ok, true);
+  assert.equal(MorphTile.getVar(ws.live, "counter", "count", ws.live.time), 8, "wake must prefer preserved sparse state over the authored default");
+  assert.deepEqual(ws.live.tiles.counter, originalMatter, "sleep/wake must preserve canonical authored matter");
+
+  const replay = MorphTile.reconstruct(ws.ledger);
+  assert.equal(replay.hash, MorphTile.hashOf(ws.live));
+  assert.deepEqual(replay.world, ws.live);
+});
