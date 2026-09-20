@@ -20,6 +20,33 @@ test("holds a capability outside the proven vocabulary", () => {
   assert.equal(run({ ...request, request_id: "cap-held", intent: { kind: "telepathy" } }).status, "HOLD");
 });
 
+test("holds malformed intent instead of silently compiling the default counter", () => {
+  const values = ["sleeping-counter", ["sleeping-counter"], null];
+  for (const [index, intent] of values.entries()) {
+    const held = run({ ...request, request_id: `cap-malformed-intent-${index}`, intent });
+    assert.equal(held.status, "HOLD");
+    assert.equal(held.candidate, null);
+    assert.deepEqual(held.holds, [{
+      code: "HOLD_CAPABILITY_INTENT_INVALID",
+      reason: "intent must be an object"
+    }]);
+  }
+});
+
+test("holds unknown capability intent fields instead of dropping authored meaning", () => {
+  const held = run({
+    ...request,
+    request_id: "cap-intent-fields-held",
+    intent: { kind: "sleeping-counter", wake: { on: "manual" }, zeta: true, initial: 5 }
+  });
+  assert.equal(held.status, "HOLD");
+  assert.equal(held.candidate, null);
+  assert.deepEqual(held.holds, [{
+    code: "HOLD_CAPABILITY_INTENT_FIELD_UNKNOWN",
+    fields: ["initial", "zeta"]
+  }]);
+});
+
 test("holds wake modes that are representable by MorphTile but not yet proven by this machine", () => {
   const held = run({
     ...request,
