@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — 2026-09-20
+
+- Added optional safe-integer `initial` counter state for both counter and sleeping-counter candidates.
+- Invalid initial values now fail closed with `HOLD_COUNTER_INITIAL_INVALID` instead of being coerced or dropped.
+- Added pinned MorphTile runtime proof that authored initial state is visible after wake without creating sparse mutation state, that the first increment creates sparse state only after divergence, and that sleep/re-wake plus ledger replay preserve the result.
+
 ## 0.1.0 — 2026-09-19
 
 - Established the isolated repository boundary.

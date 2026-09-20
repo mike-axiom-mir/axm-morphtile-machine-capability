@@ -3,7 +3,7 @@
 const { assertRequest, result } = require("./envelope");
 const MACHINE = { id: "axm.morphtile.machine.capability", version: "0.1.0" };
 const PROVEN_WAKE_MODES = ["manual", "signal"];
-const INTENT_FIELDS = new Set(["kind", "wake"]);
+const INTENT_FIELDS = new Set(["kind", "wake", "initial"]);
 
 function compileWake(wake) {
   const value = wake === undefined ? { on: "signal", name: "increment" } : wake;
@@ -47,6 +47,20 @@ function compileIntent(rawIntent) {
   return { ok: true, intent: rawIntent };
 }
 
+function compileInitial(rawInitial) {
+  if (rawInitial === undefined) return { ok: true, initial: 0 };
+  if (!Number.isSafeInteger(rawInitial)) {
+    return {
+      ok: false,
+      hold: {
+        code: "HOLD_COUNTER_INITIAL_INVALID",
+        reason: "initial must be a safe integer"
+      }
+    };
+  }
+  return { ok: true, initial: rawInitial };
+}
+
 function run(request) {
   assertRequest(request);
   const compiledIntent = compileIntent(request.intent);
@@ -68,6 +82,11 @@ function run(request) {
     });
   }
 
+  const initial = compileInitial(intent.initial);
+  if (!initial.ok) {
+    return result(request, MACHINE, "HOLD", { holds: [initial.hold] });
+  }
+
   const wake = sleeping ? compileWake(intent.wake) : null;
   if (wake && !wake.ok) {
     return result(request, MACHINE, "HOLD", {
@@ -76,7 +95,7 @@ function run(request) {
     });
   }
 
-  const logic = { type: "rule", data: { vars: { count: 0 }, rules: [{ on: "increment", do: [{ set: ["count", ["+", ["var", "count"], 1]] }] }] } };
+  const logic = { type: "rule", data: { vars: { count: initial.initial }, rules: [{ on: "increment", do: [{ set: ["count", ["+", ["var", "count"], 1]] }] }] } };
   const socket = { id: "increment", kind: "signal", dir: "in", signal: "increment", label: "Increment" };
   return result(request, MACHINE, "CANDIDATE", {
     candidate: sleeping
@@ -86,4 +105,4 @@ function run(request) {
   });
 }
 
-module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, compileWake, compileIntent, run };
+module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, compileWake, compileIntent, compileInitial, run };

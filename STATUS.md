@@ -11,10 +11,12 @@
 
 - Deterministic pure-output generation for the counter fixture.
 - Explicit HOLD for capability kinds outside the proven vocabulary.
-- Pinned cross-repository MorphTile integration covering sleep, signal wake, granted logic/socket activation, state mutation, re-sleep/re-wake, unchanged canonical tile matter, and exact ledger reconstruction.
+- Fail-closed authored intent and wake-rule validation.
+- Optional safe-integer `initial` count compiled as authored logic state rather than runtime mutation state.
+- Pinned cross-repository MorphTile integration covering sleep, signal/manual wake, authored initial state, granted logic/socket activation, sparse state mutation only after divergence, re-sleep/re-wake, unchanged canonical tile matter, and exact ledger reconstruction.
 
 ## HELD / open
 
-The current proof is intentionally narrow. Capability families beyond the counter pattern remain unproven. Compatibility is not claimed for MorphTile commits other than the pinned integration target.
+The current proof is intentionally narrow. Capability families beyond the counter pattern remain unproven. `limit`, `reset`, variable increment size, and `near`/`value`/`time` wake semantics remain unproven. Compatibility is not claimed for MorphTile commits other than the pinned integration target.
 
 No claim of autonomous creation, production readiness, canon, visual quality, or broad capability synthesis is made.
