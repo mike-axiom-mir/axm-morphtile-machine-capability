@@ -121,9 +121,11 @@ test("compiles the full currently proven MorphTile wake vocabulary exactly", () 
     ["signal", { on: "signal", name: "activate" }, { on: "signal", name: "activate" }],
     ["near-defaults", { on: "near" }, { on: "near", within: 8, hysteresis: 1.25 }],
     ["near-explicit", { on: "near", within: 4, hysteresis: 1.5 }, { on: "near", within: 4, hysteresis: 1.5 }],
+    ["near-retain", { on: "near", within: 4, sleeps: false }, { on: "near", within: 4, hysteresis: 1.25, sleeps: false }],
     ["value-over", { on: "value", var: "armed", over: 2 }, { on: "value", var: "armed", over: 2 }],
     ["value-under-child", { on: "value", tile: "sensor/inner", var: "heat", under: 10 }, { on: "value", tile: "sensor/inner", var: "heat", under: 10 }],
-    ["time", { on: "time", after: 12 }, { on: "time", after: 12 }]
+    ["value-self-retain", { on: "value", tile: "", var: "armed", over: 2, sleeps: false }, { on: "value", tile: "", var: "armed", over: 2, sleeps: false }],
+    ["time", { on: "time", after: 12, sleeps: true }, { on: "time", after: 12, sleeps: true }]
   ];
 
   for (const [name, wake, expected] of cases) {
@@ -166,12 +168,12 @@ test("holds malformed and unknown wake fields instead of silently ignoring autho
   const unknown = run({
     ...request,
     request_id: "cap-wake-fields-held",
-    intent: { kind: "sleeping-counter", wake: { on: "signal", name: "increment", zeta: true, typo: 1 } }
+    intent: { kind: "sleeping-counter", wake: { on: "signal", name: "increment", sleeps: false, typo: 1 } }
   });
   assert.deepEqual(unknown.holds, [{
     code: "HOLD_WAKE_RULE_FIELD_UNKNOWN",
     on: "signal",
-    fields: ["typo", "zeta"]
+    fields: ["sleeps", "typo"]
   }]);
 });
 
@@ -191,7 +193,7 @@ test("holds malformed near wake parameters", () => {
 test("holds malformed value wake references and ambiguous thresholds", () => {
   const cases = [
     [{ on: "value", var: "", over: 1 }, "value wake requires a non-empty var name"],
-    [{ on: "value", tile: "../sensor", var: "armed", over: 1 }, "value wake tile must be a descendant tile path when supplied"],
+    [{ on: "value", tile: "../sensor", var: "armed", over: 1 }, "value wake tile must be a descendant tile path or empty for this tile"],
     [{ on: "value", var: "armed" }, "value wake requires exactly one of over or under"],
     [{ on: "value", var: "armed", over: 1, under: 0 }, "value wake requires exactly one of over or under"],
     [{ on: "value", var: "armed", over: "1" }, "value wake threshold must be a finite number"]
@@ -212,6 +214,25 @@ test("holds malformed time wake thresholds", () => {
     assert.deepEqual(held.holds, [{
       code: "HOLD_WAKE_RULE_INVALID",
       reason: "time wake after must be a non-negative finite number"
+    }]);
+  }
+});
+
+test("holds non-boolean sleeps on every mode that supports retention control", () => {
+  const cases = [
+    ["near", { on: "near", sleeps: "no" }],
+    ["value", { on: "value", var: "armed", over: 1, sleeps: 0 }],
+    ["time", { on: "time", after: 1, sleeps: null }]
+  ];
+  for (const [mode, wake] of cases) {
+    const held = run({
+      ...request,
+      request_id: `cap-${mode}-sleeps-invalid`,
+      intent: { kind: "sleeping-counter", wake }
+    });
+    assert.deepEqual(held.holds, [{
+      code: "HOLD_WAKE_RULE_INVALID",
+      reason: `${mode} wake sleeps must be boolean when supplied`
     }]);
   }
 });
