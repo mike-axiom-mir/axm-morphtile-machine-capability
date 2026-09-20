@@ -10,7 +10,16 @@ Builds candidate state, action, and sleeping-capability matter. The foundation p
 4. **What it produces:** A morphtile.capability-candidate/v0.4 fragment.
 5. **MorphTile interaction:** output goes through MorphTile's public contracts. MorphTile does not depend on this repository.
 6. **Evidence:** deterministic pure-output/HOLD tests plus pinned cross-repository MorphTile signal-wake, manual-wake, sleep and replay integration tests.
-7. **When it cannot satisfy a request:** Unexpressed behaviors return HOLD_CAPABILITY_NOT_EXPRESSIBLE; malformed, unknown-field, inapplicable, or not-yet-proven wake rules fail closed with explicit HOLD evidence.
+7. **When it cannot satisfy a request:** Unexpressed behaviors return HOLD_CAPABILITY_NOT_EXPRESSIBLE; malformed intent, unknown authored intent fields, malformed wake rules, unknown wake fields, inapplicable wake rules, and not-yet-proven wake modes all fail closed with explicit HOLD evidence.
+
+## Intent contract
+
+The current request vocabulary intentionally accepts only:
+
+- `kind`
+- `wake`
+
+`intent` must be an object when supplied. Unknown intent fields are held rather than silently ignored. This prevents authored meaning such as an unsupported `initial`, `limit`, `reset`, or misspelled field from being dropped while the machine still emits an apparently valid counter.
 
 ## Wake-rule contract
 
@@ -31,8 +40,8 @@ The cross-repository runtime tests execute when `MORPHTILE_CORE` points to a che
 
 ## Truth boundary
 
-- IMPLEMENTED: the tiny adapter, local envelope, fail-closed wake compiler, and fixtures used by the tests.
-- TESTED: deterministic candidate generation, unsupported-intent HOLD behavior, wake-contract HOLD behavior, and sleeping-counter integration assertions against MorphTile commit `4346df01ed18cd1336064f9323d7766ff4f6338a`.
+- IMPLEMENTED: the tiny adapter, local envelope, fail-closed intent compiler, fail-closed wake compiler, and fixtures used by the tests.
+- TESTED: deterministic candidate generation, malformed/unknown intent HOLD behavior, unsupported-intent HOLD behavior, wake-contract HOLD behavior, and sleeping-counter integration assertions against MorphTile commit `4346df01ed18cd1336064f9323d7766ff4f6338a`.
 - VERIFIED IN INTEGRATION: signal wake and manual wake preserve sleeping semantics, activate the granted counter behavior only when appropriate, preserve canonical tile matter, preserve sparse state across sleep, and reconstruct to the same live-world hash.
 - EXPERIMENTAL: envelope v0.1 and every candidate schema in this foundation.
 - NOT TESTED: compatibility with MorphTile commits other than the pinned target, `near`/`value`/`time` wake modes, arbitrary capability families, visual quality, production performance, or autonomous capability invention.
