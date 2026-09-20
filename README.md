@@ -57,7 +57,7 @@ The cross-repository runtime tests execute when `MORPHTILE_CORE` points to a che
 ## Truth boundary
 
 - IMPLEMENTED: the tiny adapter, local envelope, fail-closed intent compiler, strict capability-kind compiler, safe-integer initial-state compiler, fail-closed wake compiler, and fixtures used by the tests.
-- TESTED: deterministic candidate generation, malformed/unknown intent HOLD behavior, malformed/unknown kind HOLD behavior, invalid-initial HOLD behavior, unsupported-intent HOLD behavior, and strict field/type/range validation for the five compiled wake modes against MorphTile commit `a579182ae585e5722ac87dd0cc8209963b18d000`.
+- TESTED: deterministic candidate generation, malformed/unknown intent HOLD behavior, malformed/unknown kind HOLD behavior, invalid-initial HOLD behavior, unsupported-intent HOLD behavior, and strict field/type/range validation for the five compiled wake modes against MorphTile commit `b6b086edb70fd4657495fcf01cb9fcdedceafdaf`.
 - VERIFIED IN INTEGRATION: signal and manual wake semantics; near radius/hysteresis wake and automatic sleep; value threshold wake after canonical logic-state change; time threshold wake; authored initial state without premature sparse mutation; capability action after wake; state preservation through sleep; unchanged canonical tile matter; and ledger reconstruction to the exact live-world hash.
 - EXPERIMENTAL: envelope v0.1 and every candidate schema in this foundation.
 - NOT TESTED: compatibility with MorphTile commits other than the pinned target, arbitrary capability families, limits/reset/variable-step semantics, visual quality, production performance, or autonomous capability invention.
