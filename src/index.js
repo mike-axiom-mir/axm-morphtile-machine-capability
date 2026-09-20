@@ -3,6 +3,7 @@
 const { assertRequest, result } = require("./envelope");
 const MACHINE = { id: "axm.morphtile.machine.capability", version: "0.1.0" };
 const PROVEN_WAKE_MODES = ["manual", "signal"];
+const INTENT_FIELDS = new Set(["kind", "wake"]);
 
 function compileWake(wake) {
   const value = wake === undefined ? { on: "signal", name: "increment" } : wake;
@@ -32,9 +33,28 @@ function compileWake(wake) {
   return { ok: true, wake: { on: "manual" } };
 }
 
+function compileIntent(rawIntent) {
+  if (rawIntent === undefined) return { ok: true, intent: {} };
+  if (!rawIntent || typeof rawIntent !== "object" || Array.isArray(rawIntent)) {
+    return { ok: false, hold: { code: "HOLD_CAPABILITY_INTENT_INVALID", reason: "intent must be an object" } };
+  }
+
+  const unknown = Object.keys(rawIntent).filter((key) => !INTENT_FIELDS.has(key)).sort();
+  if (unknown.length) {
+    return { ok: false, hold: { code: "HOLD_CAPABILITY_INTENT_FIELD_UNKNOWN", fields: unknown } };
+  }
+
+  return { ok: true, intent: rawIntent };
+}
+
 function run(request) {
   assertRequest(request);
-  const intent = request.intent || {};
+  const compiledIntent = compileIntent(request.intent);
+  if (!compiledIntent.ok) {
+    return result(request, MACHINE, "HOLD", { holds: [compiledIntent.hold] });
+  }
+
+  const intent = compiledIntent.intent;
   if (intent.kind && intent.kind !== "counter" && intent.kind !== "sleeping-counter") {
     return result(request, MACHINE, "HOLD", {
       holds: [{ code: "HOLD_CAPABILITY_NOT_EXPRESSIBLE", kind: intent.kind }],
@@ -66,4 +86,4 @@ function run(request) {
   });
 }
 
-module.exports = { MACHINE, PROVEN_WAKE_MODES, compileWake, run };
+module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, compileWake, compileIntent, run };
