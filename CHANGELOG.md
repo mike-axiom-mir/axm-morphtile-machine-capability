@@ -5,6 +5,9 @@
 - Added optional safe-integer `initial` counter state for both counter and sleeping-counter candidates.
 - Invalid initial values now fail closed with `HOLD_COUNTER_INITIAL_INVALID` instead of being coerced or dropped.
 - Added pinned MorphTile runtime proof that authored initial state is visible after wake without creating sparse mutation state, that the first increment creates sparse state only after divergence, and that sleep/re-wake plus ledger replay preserve the result.
+- Added deterministic compilation for MorphTile v0.4 `near`, `value`, and `time` wake rules alongside the already-proven `manual` and `signal` modes.
+- Added fail-closed type/range/field validation for proximity radius/hysteresis, descendant-relative value references and thresholds, and time thresholds.
+- Added pinned MorphTile runtime proof for near wake + hysteresis + automatic sleep, value threshold wake through the normal settle door, time threshold wake, unchanged canonical matter, preserved sparse state, and exact replay.
 
 ## 0.1.0 — 2026-09-19
 
