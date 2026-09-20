@@ -9,7 +9,7 @@ Builds candidate state, action, and sleeping-capability matter. The foundation p
 3. **What it accepts:** axm.morphtile.capability-request/v0.1 in the provisional v0.1 envelope.
 4. **What it produces:** A morphtile.capability-candidate/v0.4 fragment.
 5. **MorphTile interaction:** output goes through MorphTile's public contracts. MorphTile does not depend on this repository.
-6. **Evidence:** deterministic pure-output/HOLD tests plus pinned cross-repository MorphTile signal/manual/near/value/time wake, authored-initial-state, sleep and replay integration tests.
+6. **Evidence:** deterministic pure-output/HOLD tests plus pinned cross-repository MorphTile signal/manual/near/value/time wake, wake-retention, authored-initial-state, sleep and replay integration tests.
 7. **When it cannot satisfy a request:** Unexpressed behaviors return HOLD_CAPABILITY_NOT_EXPRESSIBLE; malformed intent, malformed/blank capability kind, unknown authored intent fields, invalid initial values, malformed wake rules, unknown wake fields, inapplicable wake rules, and wake modes outside the proven MorphTile vocabulary all fail closed with explicit HOLD evidence.
 
 ## Intent contract
@@ -35,12 +35,14 @@ The sleeping-counter compiler emits only wake shapes that this machine has expli
 - `{ "on": "manual" }`
 - `{ "on": "signal", "name": "..." }`
 - `{ "on": "near", "within": 8, "hysteresis": 1.25 }`
-- `{ "on": "value", "var": "...", "over": 2 }` or the corresponding `under` form; optional `tile` is a descendant-relative tile path
+- `{ "on": "value", "var": "...", "over": 2 }` or the corresponding `under` form; optional `tile` is a descendant-relative tile path or `""` for the capability carrier itself
 - `{ "on": "time", "after": 5 }`
 
 `near` makes MorphTile's current runtime defaults explicit in emitted matter: omitted `within` becomes `8`, omitted `hysteresis` becomes `1.25`. `within` must be a positive finite number and `hysteresis` must be finite and at least `1`, preventing an inverted wake/sleep band.
 
-`value` requires a non-empty variable name and exactly one finite `over` or `under` threshold. When `tile` is supplied it must be a descendant path because MorphTile resolves the reference relative to the capability carrier; the machine will not compile parent traversal or an ambiguous absolute-looking path.
+`value` requires a non-empty variable name and exactly one finite `over` or `under` threshold. When `tile` is supplied it must be a descendant path or the documented empty string meaning "this tile"; parent traversal and ambiguous absolute-looking paths are held.
+
+`near`, `value`, and `time` may carry boolean `sleeps`. When omitted or `true`, MorphTile may automatically sleep an awake capability when the observed condition becomes false. When explicitly `false`, the machine preserves that authored retention choice so the capability stays awake until another explicit sleep path acts. Non-boolean values fail closed. `manual` and `signal` do not accept `sleeps` because MorphTile's authored wake contract does not define it for those modes.
 
 `time.after` must be a non-negative finite number. Wake conditions are still observations, not hidden mutation authority: proximity/value/time conditions become recorded wake/sleep events only when MorphTile's normal `settle` door is invoked.
 
@@ -56,12 +58,12 @@ The cross-repository runtime tests execute when `MORPHTILE_CORE` points to a che
 
 ## Truth boundary
 
-- IMPLEMENTED: the tiny adapter, local envelope, fail-closed intent compiler, strict capability-kind compiler, safe-integer initial-state compiler, fail-closed wake compiler, and fixtures used by the tests.
-- TESTED: deterministic candidate generation, malformed/unknown intent HOLD behavior, malformed/unknown kind HOLD behavior, invalid-initial HOLD behavior, unsupported-intent HOLD behavior, and strict field/type/range validation for the five compiled wake modes against MorphTile commit `b6b086edb70fd4657495fcf01cb9fcdedceafdaf`.
-- VERIFIED IN INTEGRATION: signal and manual wake semantics; near radius/hysteresis wake and automatic sleep; value threshold wake after canonical logic-state change; time threshold wake; authored initial state without premature sparse mutation; capability action after wake; state preservation through sleep; unchanged canonical tile matter; and ledger reconstruction to the exact live-world hash.
+- IMPLEMENTED: the tiny adapter, local envelope, fail-closed intent compiler, strict capability-kind compiler, safe-integer initial-state compiler, fail-closed wake compiler, wake-retention compiler, and fixtures used by the tests.
+- TESTED: deterministic candidate generation, malformed/unknown intent HOLD behavior, malformed/unknown kind HOLD behavior, invalid-initial HOLD behavior, unsupported-intent HOLD behavior, strict field/type/range validation for the five compiled wake modes, documented empty self-relative value targets, and boolean retention control against MorphTile commit `ef2b3c6986aa1a333247feffc43a8443f17239d0`.
+- VERIFIED IN INTEGRATION: signal and manual wake semantics; near radius/hysteresis wake and automatic sleep; `near` with `sleeps:false` retaining runtime activation after the condition becomes false; value threshold wake including the documented empty self tile reference; time threshold wake; authored initial state without premature sparse mutation; capability action after wake; state preservation through sleep; unchanged canonical tile matter; and ledger reconstruction to the exact live-world hash.
 - EXPERIMENTAL: envelope v0.1 and every candidate schema in this foundation.
 - NOT TESTED: compatibility with MorphTile commits other than the pinned target, arbitrary capability families, limits/reset/variable-step semantics, visual quality, production performance, or autonomous capability invention.
-- HELD: vocabulary beyond the proven counter pattern, safe-integer initial count, and the five proven MorphTile wake shapes remains explicit HOLD territory until grounded by a real request and matching evidence.
+- HELD: vocabulary beyond the proven counter pattern, safe-integer initial count, and the proven MorphTile wake contract remains explicit HOLD territory until grounded by a real request and matching evidence.
 
 The machine's `DETERMINISTIC_OUTPUT` evidence means only that the same validated request maps to the same candidate bytes. Runtime replay is proven separately by the MorphTile integration tests; the two evidence classes are not interchangeable.
 
