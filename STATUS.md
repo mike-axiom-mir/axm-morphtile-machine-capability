@@ -15,7 +15,8 @@
 - Optional safe-integer `initial` count compiled as authored logic state rather than runtime mutation state.
 - Sleeping-counter compilation for the complete currently documented MorphTile v0.4 wake vocabulary: `manual`, `signal`, `near`, `value`, and `time`.
 - Fail-closed validation for near radius/hysteresis, descendant-relative or explicit-empty self value references, exactly one finite value threshold, non-negative finite time thresholds, and boolean `sleeps` retention control where the MorphTile contract allows it.
-- Pinned cross-repository MorphTile integration covering sleep, all five wake modes, authored initial state, granted logic/socket activation, sparse state mutation only after divergence, near automatic sleep/state preservation, `sleeps:false` retained activation, empty self-relative value wake, unchanged canonical tile matter, and exact ledger reconstruction.
+- Explicit `WAKE_DEFAULT_COMPATIBILITY` warning when an omitted sleeping-counter wake is normalized to the machine v0.1 historical signal/increment default; raw MorphTile omission remains manual and callers can request it explicitly with `{on:"manual"}`.
+- Pinned cross-repository MorphTile integration covering sleep, all five wake modes, the machine-vs-raw omitted-wake distinction, authored initial state, granted logic/socket activation, sparse state mutation only after divergence, near automatic sleep/state preservation, `sleeps:false` retained activation, empty self-relative value wake, unchanged canonical tile matter, and exact ledger reconstruction.
 
 ## HELD / open
 

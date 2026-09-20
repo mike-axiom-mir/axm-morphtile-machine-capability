@@ -5,6 +5,10 @@ const MACHINE = { id: "axm.morphtile.machine.capability", version: "0.1.0" };
 const PROVEN_WAKE_MODES = ["manual", "signal", "near", "value", "time"];
 const INTENT_FIELDS = new Set(["kind", "wake", "initial"]);
 const PROVEN_KINDS = ["counter", "sleeping-counter"];
+const DEFAULT_WAKE_WARNING = {
+  code: "WAKE_DEFAULT_COMPATIBILITY",
+  reason: "sleeping-counter wake was omitted; Capability Machine v0.1 preserves its historical signal/increment default, while raw MorphTile capability wake omission means manual. Author wake:{on:'manual'} to request the substrate default explicitly."
+};
 
 function finiteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
@@ -25,7 +29,8 @@ function compileSleeps(rawSleeps, mode) {
 }
 
 function compileWake(wake) {
-  const value = wake === undefined ? { on: "signal", name: "increment" } : wake;
+  const defaulted = wake === undefined;
+  const value = defaulted ? { on: "signal", name: "increment" } : wake;
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "wake must be an object" } };
   }
@@ -52,7 +57,7 @@ function compileWake(wake) {
     if (typeof value.name !== "string" || !value.name) {
       return { ok: false, hold: { code: "HOLD_WAKE_RULE_INVALID", reason: "signal wake requires a non-empty name" } };
     }
-    return { ok: true, wake: { on: "signal", name: value.name } };
+    return { ok: true, wake: { on: "signal", name: value.name }, defaulted };
   }
 
   if (value.on === "near") {
@@ -68,7 +73,7 @@ function compileWake(wake) {
     if (!sleeps.ok) return sleeps;
     const out = { on: "near", within, hysteresis };
     if (sleeps.present) out.sleeps = sleeps.sleeps;
-    return { ok: true, wake: out };
+    return { ok: true, wake: out, defaulted: false };
   }
 
   if (value.on === "value") {
@@ -95,7 +100,7 @@ function compileWake(wake) {
     if (hasOver) out.over = value.over;
     else out.under = value.under;
     if (sleeps.present) out.sleeps = sleeps.sleeps;
-    return { ok: true, wake: out };
+    return { ok: true, wake: out, defaulted: false };
   }
 
   if (value.on === "time") {
@@ -106,10 +111,10 @@ function compileWake(wake) {
     if (!sleeps.ok) return sleeps;
     const out = { on: "time", after: value.after };
     if (sleeps.present) out.sleeps = sleeps.sleeps;
-    return { ok: true, wake: out };
+    return { ok: true, wake: out, defaulted: false };
   }
 
-  return { ok: true, wake: { on: "manual" } };
+  return { ok: true, wake: { on: "manual" }, defaulted: false };
 }
 
 function compileIntent(rawIntent) {
@@ -203,8 +208,9 @@ function run(request) {
     candidate: sleeping
       ? { schema: "morphtile.capability-candidate/v0.4", capabilities: [{ id: "counter", wake: wake.wake, grants: { facets: { logic }, sockets: [socket] } }] }
       : { schema: "morphtile.capability-candidate/v0.4", facets: { logic, connect: { sockets: [socket], bridges: [] } } },
-    evidence: [{ kind: "DETERMINISTIC_OUTPUT", status: "PASS", check: "same validated request maps to the same candidate bytes" }]
+    evidence: [{ kind: "DETERMINISTIC_OUTPUT", status: "PASS", check: "same validated request maps to the same candidate bytes" }],
+    warnings: wake && wake.defaulted ? [DEFAULT_WAKE_WARNING] : []
   });
 }
 
-module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, PROVEN_KINDS, compileWake, compileSleeps, compileIntent, compileKind, compileInitial, run };
+module.exports = { MACHINE, PROVEN_WAKE_MODES, INTENT_FIELDS, PROVEN_KINDS, DEFAULT_WAKE_WARNING, compileWake, compileSleeps, compileIntent, compileKind, compileInitial, run };
