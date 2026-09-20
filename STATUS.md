@@ -3,7 +3,7 @@
 - Foundation version: 0.1.0
 - State: TESTED INTEGRATION FOUNDATION
 - Local tests: `npm test`
-- MorphTile integration target: v0.4 at `4346df01ed18cd1336064f9323d7766ff4f6338a`
+- MorphTile integration target: v0.4 at `a579182ae585e5722ac87dd0cc8209963b18d000`
 - Envelope: provisional v0.1
 - Visual proof: none
 
@@ -11,7 +11,7 @@
 
 - Deterministic pure-output generation for the counter fixture.
 - Explicit HOLD for capability kinds outside the proven vocabulary.
-- Fail-closed authored intent and wake-rule validation.
+- Fail-closed authored intent, capability-kind and wake-rule validation.
 - Optional safe-integer `initial` count compiled as authored logic state rather than runtime mutation state.
 - Pinned cross-repository MorphTile integration covering sleep, signal/manual wake, authored initial state, granted logic/socket activation, sparse state mutation only after divergence, re-sleep/re-wake, unchanged canonical tile matter, and exact ledger reconstruction.
 
